@@ -42,8 +42,10 @@ out_midi_device = pygame.midi.Output(output_id)
 
 #Creates an empty note table
 empty_midi_byte = [0,0,0,0]
-note_table = [empty_midi_byte] * 10
+input_note_table = [empty_midi_byte] * 10
 
+
+all_times = []
 
 #Run forever
 while True:
@@ -61,38 +63,80 @@ while True:
             if midi_events[i][0][0] == 144: #if note on
                 '''Add note to notetable here'''
                 for j in range(8,-1,-1):
-                    if note_table[j][2] != 0:
-                        note_table[j+1] = note_table[j]                         
-                note_table[j] = midi_events[i][0]
-                note_table[0] = midi_events[i][0]
+                    if input_note_table[j][2] != 0:
+                        input_note_table[j+1] = input_note_table[j]                         
+                input_note_table[j] = midi_events[i][0]
+                input_note_table[0] = midi_events[i][0]
             elif midi_events[i][0][0] == 128: #if note off
                 '''Remove note from notetable here''' 
-                for j in range(len(note_table)):
+                for j in range(len(input_note_table)):
                     #Find OffNote message in table
-                    if midi_events[i][0][1] == note_table[j][1]:
+                    if midi_events[i][0][1] == input_note_table[j][1]:
                         #Shift every following note back up one
                         for k in range(j,9):
                             if k < 9:
-                                note_table[k] = note_table[k+1]
+                                input_note_table[k] = input_note_table[k+1]
                 #Replace final note with empty values                
-                note_table[9] = empty_midi_byte              
+                input_note_table[9] = empty_midi_byte
+            #Check for new notes
+            elif in_midi_device.poll():
+                print('The end 1')
+                break
 #            print(midi_events[0][i])
-            for byte in note_table:
-                print(*byte)    
+
             #send to output (windows' own synth) - keep for future reference
             #out_midi_device.write_short(midi_events[0][0][0],midi_events[0][0][1],midi_events[0][0][2])
+            output_note_table = input_note_table[:]
+            for byte in output_note_table:
+                print(*byte)    
+            print('\n') 
         
-        #loop through note table and play the notes
-        for i in range(len(note_table)):
-            if note_table[i][0] == 144:
-                out_midi_device.write_short(note_table[i][0],note_table[i][1],note_table[i][2])
-                elapsed = time.time()-t
-                time.sleep(0.1)
-        print('\n')    
+        '''This currently causes the code to halt if notes are played in quick 
+        succession. Need to lok into this better. '''
+#        #Check if new note has been played
+#        if in_midi_device.poll():
+#            print('The end 2')
+#            break
+            
+#        output_note_table.sort(key=lambda x: x[1])              #upArp
+#        output_note_table.sort(key=lambda x: x[1],reverse=True) #downArp 
         
+        #UpdownArp
+        step_count = 0
+        step_increase = 1
         
+#        #UpArp
+#        step_count = 0
+#        step_increase = 2
+#        
+#        #downArp
+#        step_count = 1
+#        step_increase = 2
+#        
+#        #downupArp
+#        step_count = 1
+#        step_increase = 1
+        current_note = empty_midi_byte
         
-        
+        while in_midi_device.poll() == False:
+            if step_count % 2 == 0:
+                output_note_table.sort(key=lambda x: x[1])              #upArp
+            elif step_count % 2 == 1:
+                output_note_table.sort(key=lambda x: x[1],reverse=True) #downArp 
+            #loop through note table and play the notes
+            for i in range(len(output_note_table)):
+                if output_note_table[i][0] == 144:
+                    if output_note_table[i] == current_note:
+                        continue    
+                    else:    
+                        out_midi_device.write_short(output_note_table[i][0],output_note_table[i][1],output_note_table[i][2])
+                        elapsed = time.time()-t
+                        all_times.append(elapsed)
+                        time.sleep(0.2)
+                        current_note = output_note_table[i]
+            step_count+=1
+               
+
 
 #Close off all of the opened channels and exit the initialisations.
 in_midi_device.close()
