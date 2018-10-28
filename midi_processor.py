@@ -14,6 +14,33 @@ import pygame.midi
 
 import time
 
+def remove_note(note_table,input_note):
+    'Remove a midi note from the notetable'    
+    #Remove note from the noteTable 
+    for temp_midi_loc in range(len(note_table)):
+        #Find OffNote message in table
+        if input_note == note_table[temp_midi_loc][1]:
+            #Shift every following note back up one
+            for k in range(temp_midi_loc,len(note_table)-1):
+                if k < len(note_table)-1:
+                    note_table[k] = note_table[k+1]
+    #Replace final note with empty values                
+    note_table[-1] = empty_midi_byte
+    return note_table
+
+
+        
+def add_note(note_table,new_note):
+    'Add a midi note to the top of the notetable.'
+    #Add note to the top of the noteTable and shift everything down one line
+    for temp_midi_loc in range(len(note_table)-2,-1,-1): # -2 as final datum not important and code runs to +1
+        if note_table[temp_midi_loc][2] != 0:
+            note_table[temp_midi_loc+1] = note_table[temp_midi_loc]                         
+    note_table[temp_midi_loc] = new_note
+    note_table[0] = new_note
+    return note_table
+
+
 def arpeggiate_note_table(input_note_table,arpeggiate_type):
     '''Arpeggiate the received note table'''
     empty_midi_byte = [0,0,0,0]
@@ -104,33 +131,19 @@ while True:
         #print received midi messages and 
         for new_midi in range(len(midi_events)):
             if midi_events[new_midi][0][0] == 144: #if note on
-                #Add note to the top of the noteTable and shift everything down one line
-                for temp_midi_loc in range(len(input_note_table)-2,-1,-1): # -2 as final datum not important and code runs to +1
-                    if input_note_table[temp_midi_loc][2] != 0:
-                        input_note_table[temp_midi_loc+1] = input_note_table[temp_midi_loc]                         
-                input_note_table[temp_midi_loc] = midi_events[new_midi][0]
-                input_note_table[0] = midi_events[new_midi][0]
+                new_note = midi_events[new_midi][0]
+                input_note_table = add_note(input_note_table,new_note)
             elif midi_events[new_midi][0][0] == 128: #if note off
-                #Remove note from the noteTable 
-                for temp_midi_loc in range(len(input_note_table)):
-                    #Find OffNote message in table
-                    if midi_events[new_midi][0][1] == input_note_table[temp_midi_loc][1]:
-                        #Shift every following note back up one
-                        for k in range(temp_midi_loc,len(input_note_table)-1):
-                            if k < len(input_note_table)-1:
-                                input_note_table[k] = input_note_table[k+1]
-                #Replace final note with empty values                
-                input_note_table[-1] = empty_midi_byte
+                removal_note = midi_events[new_midi][0][1]
+                input_note_table = remove_note(input_note_table,removal_note)
 
             #print input noteTable for viewing reference
             for byte in input_note_table:
                 print(*byte)    
             print('\n') 
         
-        arpeggiate_note_table(input_note_table,'updown')
+        arpeggiate_note_table(input_note_table,'up')
         
-        
-
 
 #Close off all of the opened channels and exit the initialisations.
 in_midi_device.close()
