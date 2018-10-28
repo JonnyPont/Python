@@ -13,6 +13,8 @@ import time
 
 import arp_funcs as af
 
+from note_detector import determine_note
+
 #Needs initialising for some reason, and declaring that events need to be got
 pygame.init()
 pygame.fastevent.init()
@@ -50,6 +52,7 @@ while True:
         for new_midi in range(len(midi_events)):
             if midi_events[new_midi][0][0] == 144: #if note on
                 new_note = midi_events[new_midi][0]
+                determine_note(new_note)
                 input_note_table = af.add_note(input_note_table,new_note)
             elif midi_events[new_midi][0][0] == 128: #if note off
                 removal_note = midi_events[new_midi][0][1]
@@ -60,7 +63,7 @@ while True:
                 print(*byte)    
             print('\n') 
         
-        af.arpeggiate_note_table(in_midi_device,out_midi_device,input_note_table,'updown',tempo=20)
+        af.arpeggiate_note_table(in_midi_device,out_midi_device,input_note_table,'updown',tempo=320)
         
 
 #Close off all of the opened channels and exit the initialisations.
