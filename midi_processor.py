@@ -1,11 +1,8 @@
 # -*- coding: utf-8 -*-
 """
 Created on Mon Oct 15 13:54:00 2018
-
 @author: jp15101
-
 https://github.com/kushalbhabra/pyMidi/blob/master/src/test.py
-
 """
 
 import pygame
