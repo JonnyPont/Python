@@ -62,7 +62,11 @@ def arpeggiate_note_table(in_midi_device,out_midi_device,input_note_table,arpegg
     If new note off messages are received then the output only changes after a 
     complete loop. This means there is significant delay. I need to look into
     how the poll messages look for NoteOff and see how they differ from note on
-    to see if that can give the necessary answers.'''
+    to see if that can give the necessary answers.
+    
+    This is now detecting, but the time.sleep() function means that at low tempos
+    it takes a while for the off note or new on note to take effect. This makes 
+    it difficutl to play with in practice.'''
     while in_midi_device.poll() == False:
         if step_count % 2 == 0:
             output_note_table.sort(key=lambda x: x[1])              #upArp
@@ -79,11 +83,8 @@ def arpeggiate_note_table(in_midi_device,out_midi_device,input_note_table,arpegg
                 else:    
                     #play notes from output table
                     out_midi_device.write_short(output_note_table[note_loc][0],output_note_table[note_loc][1],127)
-                    #evaluate code runtime - bit antequated...I could do with a new way of going about doing this.
+                    #evaluate code runtime - bit clunky to sleep the code - parallel processing opportunity?
                     elapsed = time.time()-t
-#                    #IT would be better to wait for the remaining amount of time. If code has run for 0.1 secs
-#                    #already then we want it to only wait 0.1 secs. for example
-#                    all_times.append(elapsed)
                     time.sleep(60/tempo-elapsed)
                     current_note = output_note_table[note_loc]
         #counter used to control Up/Down functionalities            
