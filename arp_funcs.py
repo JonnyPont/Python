@@ -35,7 +35,7 @@ def add_note(note_table,new_note):
     return note_table
 
 
-def arpeggiate_note_table(in_midi_device,out_midi_device,input_note_table,arpeggiate_type='updown',tempo=120):
+def arpeggiate_note_table(in_midi_device,out_midi_device,input_note_table,arpeggiate_type='updown',tempo=120,note_type=4):
     '''Arpeggiate the received note table'''
     empty_midi_byte = [0,0,0,0]
     output_note_table = input_note_table[:]
@@ -85,7 +85,7 @@ def arpeggiate_note_table(in_midi_device,out_midi_device,input_note_table,arpegg
                     out_midi_device.write_short(output_note_table[note_loc][0],output_note_table[note_loc][1],127)
                     #evaluate code runtime - bit clunky to sleep the code - parallel processing opportunity?
                     elapsed = time.time()-t
-                    time.sleep(60/tempo-elapsed)
+                    time.sleep((4/note_type)*(60/tempo)-elapsed)
                     current_note = output_note_table[note_loc]
         #counter used to control Up/Down functionalities            
         step_count+=step_increase
