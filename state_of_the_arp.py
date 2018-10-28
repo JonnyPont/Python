@@ -60,7 +60,7 @@ while True:
                 print(*byte)    
             print('\n') 
         
-        af.arpeggiate_note_table(in_midi_device,out_midi_device,input_note_table,'updown') #in_midi_device,out_midi_device,
+        af.arpeggiate_note_table(in_midi_device,out_midi_device,input_note_table,'updown',240) #in_midi_device,out_midi_device,
         
 
 #Close off all of the opened channels and exit the initialisations.

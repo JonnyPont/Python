@@ -35,7 +35,7 @@ def add_note(note_table,new_note):
     return note_table
 
 
-def arpeggiate_note_table(in_midi_device,out_midi_device,input_note_table,arpeggiate_type):
+def arpeggiate_note_table(in_midi_device,out_midi_device,input_note_table,arpeggiate_type='updown',tempo=120):
     '''Arpeggiate the received note table'''
     empty_midi_byte = [0,0,0,0]
     output_note_table = input_note_table[:]
@@ -70,6 +70,7 @@ def arpeggiate_note_table(in_midi_device,out_midi_device,input_note_table,arpegg
             output_note_table.sort(key=lambda x: x[1],reverse=True) #downArp 
         #loop through note table and play the notes
         for note_loc in range(len(output_note_table)):
+            t = time.time()
             if output_note_table[note_loc][0] == 144:
                 #Don't play a note if it's the same as the last note played and there are other notes available.
                 #Removes repeats of high notes. Causes single notes to be played on repeat.
@@ -79,11 +80,11 @@ def arpeggiate_note_table(in_midi_device,out_midi_device,input_note_table,arpegg
                     #play notes from output table
                     out_midi_device.write_short(output_note_table[note_loc][0],output_note_table[note_loc][1],127)
                     #evaluate code runtime - bit antequated...I could do with a new way of going about doing this.
-#                    elapsed = time.time()-t
+                    elapsed = time.time()-t
 #                    #IT would be better to wait for the remaining amount of time. If code has run for 0.1 secs
 #                    #already then we want it to only wait 0.1 secs. for example
 #                    all_times.append(elapsed)
-                    time.sleep(0.2)
+                    time.sleep(60/tempo-elapsed)
                     current_note = output_note_table[note_loc]
         #counter used to control Up/Down functionalities            
         step_count+=step_increase
