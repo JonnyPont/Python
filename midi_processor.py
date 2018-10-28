@@ -14,6 +14,60 @@ import pygame.midi
 
 import time
 
+def arpeggiate_note_table(input_note_table,arpeggiate_type):
+    '''Arpeggiate the received note table'''
+    empty_midi_byte = [0,0,0,0]
+    output_note_table = input_note_table[:]
+    
+    if str(arpeggiate_type) == 'up':
+        step_count = 0
+        step_increase = 2
+    elif str(arpeggiate_type) == 'down':
+        step_count = 1
+        step_increase = 2
+    elif str(arpeggiate_type) == 'downup':
+        step_count = 1
+        step_increase = 1
+    elif str(arpeggiate_type) == 'updown':    
+        step_count = 0
+        step_increase = 1        
+    else:
+        print("That is not a valid arpeggiator function")        
+
+    current_note = empty_midi_byte
+    
+    '''This runs indefinitely until a new message has been received. Currently, 
+    if new note on messages are received then everything is fine and dandy. 
+    If new note off messages are received then the output only changes after a 
+    complete loop. This means there is significant delay. I need to look into
+    how the poll messages look for NoteOff and see how they differ from note on
+    to see if that can give the necessary answers.'''
+    while in_midi_device.poll() == False:
+        if step_count % 2 == 0:
+            output_note_table.sort(key=lambda x: x[1])              #upArp
+        elif step_count % 2 == 1:
+            output_note_table.sort(key=lambda x: x[1],reverse=True) #downArp 
+        #loop through note table and play the notes
+        for note_loc in range(len(output_note_table)):
+            if output_note_table[note_loc][0] == 144:
+                #Don't play a note if it's the same as the last note played and there are other notes available.
+                #Removes repeats of high notes. Causes single notes to be played on repeat.
+                if output_note_table[note_loc] == current_note and input_note_table[1] != empty_midi_byte:
+                    continue    
+                else:    
+                    #play notes from output table
+                    out_midi_device.write_short(output_note_table[note_loc][0],output_note_table[note_loc][1],127)
+                    #evaluate code runtime
+                    elapsed = time.time()-t
+                    #IT would be better to wait for the remaining amount of time. If code has run for 0.1 secs
+                    #already then we want it to only wait 0.1 secs. for example
+                    all_times.append(elapsed)
+                    time.sleep(0.2)
+                    current_note = output_note_table[note_loc]
+        #counter used to control Up/Down functionalities            
+        step_count+=step_increase
+
+
 #Needs initialising for some reason, and declaring that events need to be got
 pygame.init()
 pygame.fastevent.init()
@@ -48,80 +102,35 @@ while True:
             break
         
         #print received midi messages and 
-        for i in range(len(midi_events)):
-            if midi_events[i][0][0] == 144: #if note on
+        for new_midi in range(len(midi_events)):
+            if midi_events[new_midi][0][0] == 144: #if note on
                 #Add note to the top of the noteTable and shift everything down one line
-                for j in range(8,-1,-1):
-                    if input_note_table[j][2] != 0:
-                        input_note_table[j+1] = input_note_table[j]                         
-                input_note_table[j] = midi_events[i][0]
-                input_note_table[0] = midi_events[i][0]
-            elif midi_events[i][0][0] == 128: #if note off
+                for temp_midi_loc in range(len(input_note_table)-2,-1,-1): # -2 as final datum not important and code runs to +1
+                    if input_note_table[temp_midi_loc][2] != 0:
+                        input_note_table[temp_midi_loc+1] = input_note_table[temp_midi_loc]                         
+                input_note_table[temp_midi_loc] = midi_events[new_midi][0]
+                input_note_table[0] = midi_events[new_midi][0]
+            elif midi_events[new_midi][0][0] == 128: #if note off
                 #Remove note from the noteTable 
-                for j in range(len(input_note_table)):
+                for temp_midi_loc in range(len(input_note_table)):
                     #Find OffNote message in table
-                    if midi_events[i][0][1] == input_note_table[j][1]:
+                    if midi_events[new_midi][0][1] == input_note_table[temp_midi_loc][1]:
                         #Shift every following note back up one
-                        for k in range(j,9):
-                            if k < 9:
+                        for k in range(temp_midi_loc,len(input_note_table)-1):
+                            if k < len(input_note_table)-1:
                                 input_note_table[k] = input_note_table[k+1]
                 #Replace final note with empty values                
-                input_note_table[9] = empty_midi_byte
+                input_note_table[-1] = empty_midi_byte
 
-            #print output noteTable for viewing reference
-            output_note_table = input_note_table[:]
-            for byte in output_note_table:
+            #print input noteTable for viewing reference
+            for byte in input_note_table:
                 print(*byte)    
             print('\n') 
         
+        arpeggiate_note_table(input_note_table,'updown')
+        
+        
 
-#        #UpdownArp - functions
-#        step_count = 0
-#        step_increase = 1
-        
-#        #UpArp - functions
-#        step_count = 0
-#        step_increase = 2
-        
-#        #downArp - functions.
-#        step_count = 1
-#        step_increase = 2
-        
-        #downupArp - functions
-        step_count = 1
-        step_increase = 1
-        
-        current_note = empty_midi_byte
-        
-        '''This runs indefinitely until a new message has been received. Currently, 
-        if new note on messages are received then everything is fine and dandy. 
-        If new note off messages are received then the output only changes after a 
-        complete loop. This means there is significant delay. I need to look into
-        how the poll messages look for NoteOff and see how they differ from note on
-        to see if that can give the necessary answers.'''
-        while in_midi_device.poll() == False:
-            if step_count % 2 == 0:
-                output_note_table.sort(key=lambda x: x[1])              #upArp
-            elif step_count % 2 == 1:
-                output_note_table.sort(key=lambda x: x[1],reverse=True) #downArp 
-            #loop through note table and play the notes
-            for i in range(len(output_note_table)):
-                if output_note_table[i][0] == 144:
-                    #Don't play a note if it's the same as the last note played and there are other notes available.
-                    #Removes repeats of high notes. Causes single notes to be played on repeat.
-                    if output_note_table[i] == current_note and input_note_table[1] != empty_midi_byte:
-                        continue    
-                    else:    
-                        #play notes from output table
-                        out_midi_device.write_short(output_note_table[i][0],output_note_table[i][1],127)
-                        #evaluate code runtime
-                        elapsed = time.time()-t
-                        all_times.append(elapsed)
-                        time.sleep(0.2)
-                        current_note = output_note_table[i]
-            #counter used to control Up/Down functionalities            
-            step_count+=step_increase
-               
 
 #Close off all of the opened channels and exit the initialisations.
 in_midi_device.close()
