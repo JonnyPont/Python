@@ -11,6 +11,7 @@ import tables
 import IPython.display
 import os
 import json
+import time
 
 
 # Utility functions for retrieving paths
@@ -56,85 +57,94 @@ for midi_md5, score in scores[msd_id].items():
     print('  {} with confidence score {}'.format(midi_md5, score))
 
 
+i = 0
 
-while True:
+while i<2:#len(scores):
+    i+=1
+    start = time.time()
     # Grab an MSD ID and its dictionary of matches
-    msd_id, matches = scores.popitem()
+    msd_id, matches = scores.popitem() #removes most recently added
     # Grab a MIDI from the matches
     midi_md5, score = matches.popitem()
     # Construct the path to the aligned MIDI
     aligned_midi_path = get_midi_path(msd_id, midi_md5, 'aligned')
     # Load/parse the MIDI file with pretty_midi
     pm = pretty_midi.PrettyMIDI(aligned_midi_path)
-    # Look for a MIDI file which has lyric and key signature change events
-    if len(pm.lyrics) > 5 and len(pm.key_signature_changes) > 0:
-        break
+#    # Look for a MIDI file which has lyric and key signature change events
+#    if len(pm.lyrics) > 5 and len(pm.key_signature_changes) > 0:
+#        break
+    
+    ## MIDI files in LMD-aligned are aligned to 7digital preview clips from the MSD
+    ## Let's listen to this aligned MIDI along with its preview clip
+    ## Load in the audio data
+    #audio, fs = librosa.load(msd_id_to_mp3(msd_id))
+    ## Synthesize the audio using fluidsynth
+    #midi_audio = pm.fluidsynth(fs)
+    ## Play audio in one channel, synthesized MIDI in the other
+    #IPython.display.Audio([audio, midi_audio[:audio.shape[0]]], rate=fs)
+    
+    
+    '''Have currently commented out all of the mp3 file shenanigans as I don't know
+    what data it's meant to be using so can't begin the process. Will return to this
+    in the future.'''
+    
+    # Retrieve piano roll of the MIDI file
+    piano_roll = pm.get_piano_roll()
+    
+    
+#    '''Extra things what Jonny Pont is fiddling with'''
+#    #Histogram attempt
+#    piano_hist = pm.get_pitch_class_histogram()
+#    plt.hist(piano_hist,bins=12) #I need another way of plotting this. Interesting info about presence of notes.
+#    
+#    transition_matrix = pm.get_pitch_class_transition_matrix()
+#    midi_chroma = pm.get_chroma()
+#    librosa.display.specshow(midi_chroma)
+    
+    
+    # Use 7 octaves starting from C1
+    piano_roll = piano_roll[12:96]
+    # Retrieve the audio corresponding to this MSD entry
+    '''audio, fs = librosa.load(msd_id_to_mp3(msd_id))
+    # Compute constant-Q spectrogram
+    cqt = librosa.logamplitude(librosa.cqt(audio))
+    # Normalize for visualization
+    cqt = librosa.util.normalize(cqt)'''
+    
+    #not producing the plot on each iteration causes memory to eventually crash
+    fig = plt.figure(figsize=(10, 6))
+#    plt.subplot(211)
+    librosa.display.specshow(piano_roll)#, y_axis='cqt_note', cmap=plt.cm.hot)
+    #plt.title('MIDI piano roll')
+#    plt.subplot(212)
+#    '''librosa.display.specshow(cqt, y_axis='cqt_note', x_axis='time',
+#                             cmap=plt.cm.hot, vmin=np.percentile(cqt, 25))'''
+#    plt.title('Audio CQT');
+    filename = 'chromagrams/test_midi_chromagram' + '{0:05}'.format(i) + '.png'
+    fig.savefig(filename,format='png',dpi=1200,bbox_inches='tight',pad_inches=0)
+    print(filename + ' saved')
+    end = time.time()
+    print( str(end-start) + ' seconds to save chromagram')
 
-## MIDI files in LMD-aligned are aligned to 7digital preview clips from the MSD
-## Let's listen to this aligned MIDI along with its preview clip
-## Load in the audio data
-#audio, fs = librosa.load(msd_id_to_mp3(msd_id))
-## Synthesize the audio using fluidsynth
-#midi_audio = pm.fluidsynth(fs)
-## Play audio in one channel, synthesized MIDI in the other
-#IPython.display.Audio([audio, midi_audio[:audio.shape[0]]], rate=fs)
-
-
-'''Have currently commented out all of the mp3 file shenanigans as I don't know
-what data it's meant to be using so can't begin the process. Will return to this
-in the future.'''
-
-# Retrieve piano roll of the MIDI file
-piano_roll = pm.get_piano_roll()
-
-
-'''Extra things what Jonny Pont is fiddling with'''
-#Histogram attempt
-piano_hist = pm.get_pitch_class_histogram()
-plt.hist(piano_hist,bins=12) #I need another way of plotting this. Interesting info about presence of notes.
-
-transition_matrix = pm.get_pitch_class_transition_matrix()
-midi_chroma = pm.get_chroma()
-
-
-# Use 7 octaves starting from C1
-piano_roll = piano_roll[12:96]
-# Retrieve the audio corresponding to this MSD entry
-'''audio, fs = librosa.load(msd_id_to_mp3(msd_id))
-# Compute constant-Q spectrogram
-cqt = librosa.logamplitude(librosa.cqt(audio))
-# Normalize for visualization
-cqt = librosa.util.normalize(cqt)'''
-
-fig = plt.figure(figsize=(10, 6))
-plt.subplot(211)
-librosa.display.specshow(piano_roll, y_axis='cqt_note', cmap=plt.cm.hot)
-plt.title('MIDI piano roll')
-plt.subplot(212)
-'''librosa.display.specshow(cqt, y_axis='cqt_note', x_axis='time',
-                         cmap=plt.cm.hot, vmin=np.percentile(cqt, 25))'''
-plt.title('Audio CQT');
-fig.savefig('Piano_Roll.png',format='png',dpi=1200)
-
-# Retrieve piano roll of one of the instruments
-piano_roll = pm.instruments[4].get_piano_roll()
-piano_roll = piano_roll[12:96]
-fig = plt.figure(figsize=(10, 3))
-librosa.display.specshow(piano_roll, y_axis='cqt_note', cmap=plt.cm.hot)
-# Get the text name of this instrument's program number
-program_name = pretty_midi.program_to_instrument_name(pm.instruments[4].program)
-plt.title('Instrument 4 ({}) piano roll'.format(program_name));
-fig.savefig('Instrument_Note_Piano_Roll.png',format='png',dpi=1200)
-
-# pretty_midi also provides direct access to the pitch and start/end time of each note
-intervals = np.array([[note.start, note.end] for note in pm.instruments[4].notes])
-notes = np.array([note.pitch for note in pm.instruments[4].notes])
-fig = plt.figure(figsize=(10, 3))
-mir_eval.display.piano_roll(intervals, midi=notes, facecolor='orange')
-plt.title('Instrument 4 ({}) piano roll'.format(program_name))
-plt.xlabel('Time')
-plt.ylabel('MIDI note number');
-fig.savefig('Instrument_Midi_Piano_Roll.png')
+## Retrieve piano roll of one of the instruments
+#piano_roll = pm.instruments[4].get_piano_roll()
+#piano_roll = piano_roll[12:96]
+#fig = plt.figure(figsize=(10, 3))
+#librosa.display.specshow(piano_roll, y_axis='cqt_note', cmap=plt.cm.hot)
+## Get the text name of this instrument's program number
+#program_name = pretty_midi.program_to_instrument_name(pm.instruments[4].program)
+#plt.title('Instrument 4 ({}) piano roll'.format(program_name));
+#fig.savefig('Instrument_Note_Piano_Roll.png',format='png',dpi=1200)
+#
+## pretty_midi also provides direct access to the pitch and start/end time of each note
+#intervals = np.array([[note.start, note.end] for note in pm.instruments[4].notes])
+#notes = np.array([note.pitch for note in pm.instruments[4].notes])
+#fig = plt.figure(figsize=(10, 3))
+#mir_eval.display.piano_roll(intervals, midi=notes, facecolor='orange')
+#plt.title('Instrument 4 ({}) piano roll'.format(program_name))
+#plt.xlabel('Time')
+#plt.ylabel('MIDI note number');
+#fig.savefig('Instrument_Midi_Piano_Roll.png')
 
 
 ''' Downbeats code. Doesn't work as requires access to audio. '''
