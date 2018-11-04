@@ -59,7 +59,7 @@ for midi_md5, score in scores[msd_id].items():
 
 i = 0
 
-while i<2:#len(scores):
+while i<1000:#len(scores):
     i+=1
     start = time.time()
     # Grab an MSD ID and its dictionary of matches
@@ -120,8 +120,9 @@ while i<2:#len(scores):
 #    '''librosa.display.specshow(cqt, y_axis='cqt_note', x_axis='time',
 #                             cmap=plt.cm.hot, vmin=np.percentile(cqt, 25))'''
 #    plt.title('Audio CQT');
-    filename = 'chromagrams/test_midi_chromagram' + '{0:05}'.format(i) + '.png'
+    filename = 'chromagrams/test_midi_chromagram_playaround' + '{0:05}'.format(i) + '.png'
     fig.savefig(filename,format='png',dpi=1200,bbox_inches='tight',pad_inches=0)
+    plt.close(fig) #without this line, the code crashed after 62 iterations...with it, closed after 89
     print(filename + ' saved')
     end = time.time()
     print( str(end-start) + ' seconds to save chromagram')
