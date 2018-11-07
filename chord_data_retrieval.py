@@ -6,6 +6,7 @@ Created on Mon Nov  5 13:08:54 2018
 """
 
 import requests
+from requests_oauthlib import OAuth2Session
 
 header = {"Accept": "application/json", 
           "Content-Type": "application/json",
@@ -16,7 +17,9 @@ base_url = "https://api.hooktheory.com/v1/"
 post_url = "users/auth"
 chord_prob_url = "trends/nodes"
 r = requests.post(base_url+post_url,data=header)
-activkey_value = '63f32052def743e24b54f09172819e73'
+activkey_value = r.json()['activkey']
+client_id = r.json()['id']
+
 
 #Authorization = ['Bearer' ] 
 
