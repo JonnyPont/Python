@@ -77,58 +77,21 @@ while i<3:#len(scores):
     aligned_midi_path = get_midi_path(msd_id, midi_md5, 'aligned')
     # Load/parse the MIDI file with pretty_midi
     pm = pretty_midi.PrettyMIDI(aligned_midi_path)
-#    # Look for a MIDI file which has lyric and key signature change events
-#    if len(pm.lyrics) > 5 and len(pm.key_signature_changes) > 0:
-#        break
-    
-    ## MIDI files in LMD-aligned are aligned to 7digital preview clips from the MSD
-    ## Let's listen to this aligned MIDI along with its preview clip
-    ## Load in the audio data
-    #audio, fs = librosa.load(msd_id_to_mp3(msd_id))
-    ## Synthesize the audio using fluidsynth
-    #midi_audio = pm.fluidsynth(fs)
-    ## Play audio in one channel, synthesized MIDI in the other
-    #IPython.display.Audio([audio, midi_audio[:audio.shape[0]]], rate=fs)
-    
-    
-    '''Have currently commented out all of the mp3 file shenanigans as I don't know
-    what data it's meant to be using so can't begin the process. Will return to this
-    in the future.'''
-    
+
     # Retrieve piano roll of the MIDI file
     piano_roll = pm.get_piano_roll()
     
-    
-#    '''Extra things what Jonny Pont is fiddling with'''
-#    #Histogram attempt
-#    piano_hist = pm.get_pitch_class_histogram()
-#    plt.hist(piano_hist,bins=12) #I need another way of plotting this. Interesting info about presence of notes.
-#    
-#    transition_matrix = pm.get_pitch_class_transition_matrix()
-#    midi_chroma = pm.get_chroma()
-#    librosa.display.specshow(midi_chroma)
-    
-    
     # Use 7 octaves starting from C1
     piano_roll = piano_roll[12:96]
-    # Retrieve the audio corresponding to this MSD entry
-    '''audio, fs = librosa.load(msd_id_to_mp3(msd_id))
-    # Compute constant-Q spectrogram
-    cqt = librosa.logamplitude(librosa.cqt(audio))
-    # Normalize for visualization
-    cqt = librosa.util.normalize(cqt)'''
     
     #not producing the plot on each iteration causes memory to eventually crash
-    fig = plt.figure(figsize=(10, 6))
+    fig = plt.figure(figsize=(3, 3))
 #    plt.subplot(211)
     librosa.display.specshow(piano_roll)#, y_axis='cqt_note', cmap=plt.cm.hot)
-    #plt.title('MIDI piano roll')
-#    plt.subplot(212)
-#    '''librosa.display.specshow(cqt, y_axis='cqt_note', x_axis='time',
-#                             cmap=plt.cm.hot, vmin=np.percentile(cqt, 25))'''
-#    plt.title('Audio CQT');
-    filename = 'chromagrams/test_midi_chromagram_playaround' + '{0:05}'.format(i) + '.png'
-    fig.savefig(filename,format='png',dpi=1200,bbox_inches='tight',pad_inches=0)
+
+
+    filename = 'resolution_testing' + '{0:05}'.format(i) + '.png'
+    fig.savefig(filename,format='png',dpi=25,bbox_inches='tight',pad_inches=0) #currently 65x63 might need to adjust the data sooner
     plt.close(fig) #without this line, the code crashed after 62 iterations...with it, closed after 89
     print(filename + ' saved')
     end = time.time()
@@ -154,24 +117,3 @@ while i<3:#len(scores):
 #plt.ylabel('MIDI note number');
 #fig.savefig('Instrument_Midi_Piano_Roll.png')
 
-
-''' Downbeats code. Doesn't work as requires access to audio. '''
-'''
-# Retrieve the beats and downbeats from pretty_midi
-# Note that the beat phase will be wrong until the first time signature change after 0s
-# So, let's start beat tracking from that point
-first_ts_after_0 = [ts.time for ts in pm.time_signature_changes if ts.time > 0.][0]
-# Get beats from pretty_midi, supplying a start time
-beats = pm.get_beats(start_time=first_ts_after_0)
-# .. downbeats, too
-downbeats = pm.get_downbeats(start_time=first_ts_after_0)
-# Display meter on top of waveform
-plt.figure(figsize=(10, 3))
-librosa.display.waveplot(audio, color='green', alpha=.5)
-mir_eval.display.events(beats, base=-1, height=2, color='orange')
-mir_eval.display.events(downbeats, base=-1, height=2, color='black', lw=2);
-# Synthesize clicks at these downbeat times
-beat_clicks = librosa.clicks(beats, length=audio.shape[0])
-downbeat_clicks = librosa.clicks(downbeats, click_freq=2000, length=audio.shape[0])
-IPython.display.Audio([audio, beat_clicks + downbeat_clicks], rate=fs)
-'''
