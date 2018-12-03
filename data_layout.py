@@ -40,6 +40,43 @@ def get_midi_path(msd_id, midi_md5, kind):
     return os.path.join(RESULTS_PATH, 'lmd_{}'.format(kind),
                         msd_id_to_dirs(msd_id), midi_md5 + '.mid')
 
+def create_chord_vec(chord_name):
+        
+    chord_vec = np.zeros(13)
+    if chord_name[-5:] == 'Major' or chord_name[-5:] == 'major' :
+        chord_vec[-1] = 0
+        shift = 9                      
+    elif chord_name[-5:] == 'Minor' or chord_name[-5:] == 'minor':
+        chord_vec[-1] = 1
+        shift = 0
+
+    #Complete the chord vector according to MIDInet        
+    if chord_name[:2] == 'A ':
+        chord_vec[(0+shift)%12]= 1
+    elif chord_name[:2] == 'Bb':
+        chord_vec[(1+shift)%12]= 1
+    elif chord_name[:2] == 'B ':
+        chord_vec[(2+shift)%12]= 1            
+    elif chord_name[:2] == 'C ':
+        chord_vec[(3+shift)%12]= 1            
+    elif chord_name[:2] == 'Db':
+        chord_vec[(4+shift)%12]= 1            
+    elif chord_name[:2] == 'D ':
+        chord_vec[(5+shift)%12]= 1
+    elif chord_name[:2] == 'Eb':
+        chord_vec[(6+shift)%12]= 1
+    elif chord_name[:2] == 'E ':
+        chord_vec[(7+shift)%12]= 1
+    elif chord_name[:2] == 'F ':
+        chord_vec[(8+shift)%12]= 1
+    elif chord_name[:2] == 'Gb':
+        chord_vec[(9+shift)%12]= 1
+    elif chord_name[:2] == 'G ':
+        chord_vec[(10+shift)%12]= 1
+    elif chord_name[:2] == 'Ab':
+        chord_vec[(11+shift)%12]= 1             
+    
+    return chord_vec
 
 # Local path constants
 DATA_PATH = 'data'
@@ -61,7 +98,7 @@ msd_id = list(scores.keys())[1234] #this doesn't seem to select different files 
 ''' Looping chromagram plotter. Set i<1 for a single iteration. Currently broke on iteration 865 '''
 midi_file_number = 0
 saved            = 0
-while midi_file_number<len(scores):
+while saved<6074:#midi_file_number<15:#len(scores):
     midi_file_number+=1
     ''' This particular iteration seems to cause issues which I cannot explain. 
         Long term it's worth working out a better method than popitem() for 
@@ -123,10 +160,12 @@ while midi_file_number<len(scores):
         intervals = np.array([[note.start, note.end] for note in pm.instruments[instrument_channel].notes])
         notes = np.array([note.pitch for note in pm.instruments[instrument_channel].notes]) 
         
-#        # Get key data for each MIDI file.
-#        for key_change in pm.key_signature_changes:
+        # Get key data for each MIDI file.
+        for key_change in pm.key_signature_changes:
 #            print('Key {} starting at time {:.2f}'.format(
 #                pretty_midi.key_number_to_key_name(key_change.key_number), key_change.time))
+#            print(pretty_midi.key_number_to_key_name(key_change.key_number))
+            current_chord = create_chord_vec(pretty_midi.key_number_to_key_name(key_change.key_number))
         
         # Redefine each on note as a 1 rather than assigning a velcoity.
         tester = piano_roll >= 1
@@ -162,6 +201,7 @@ while midi_file_number<len(scores):
                 #save off if 8 consecutive bars found
                 if count%8==0:
                     np.save('8_bar_data/monophonic_8bar_'+'{}'.format(saved)+'.npy',save_list)
+                    np.save('8_bar_data/chord_'+'{}'.format(saved)+'.npy',current_chord)
 #                    print('file saved')
                     saved += 1            
                     #once saved need to prepare for the next scan through
@@ -179,8 +219,6 @@ while midi_file_number<len(scores):
                Before implementing - ensure to have separate monophonic/polyphonic
                save folders.'''
 #            print('Data includes polyphonic sections so is not appropriate for saving.')
-            
-            
             
             
             
